@@ -221,6 +221,42 @@
   .rec-body p{margin:0;font-size:14px;line-height:1.6;color:var(--ink);}
   .rec-body p.small{font-size:12.5px;color:var(--slate);margin-top:4px;}
 
+  .rec-solution{
+    margin-top:12px;
+    padding:14px 16px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:5px;
+  }
+  .rec-solution-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin:0 0 4px;
+  }
+  .rec-solution-name{
+    font-size:14.5px;
+    font-weight:600;
+    color:var(--ink);
+    margin:0 0 4px;
+  }
+  .rec-solution p{margin:0 0 10px;font-size:13px;line-height:1.55;color:var(--slate);}
+  .rec-cta{
+    display:inline-block;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--ink);
+    background:var(--brass-light);
+    border:1px solid var(--brass);
+    padding:7px 12px;
+    border-radius:4px;
+    text-decoration:none;
+  }
+  .rec-cta:hover{background:var(--brass);}
+
   .cta{
     background:var(--ink);
     color:#F7F5F0;
@@ -337,7 +373,7 @@
       <input class="email" type="email" id="emailInput" placeholder="you@company.com">
       <button class="primary" id="ctaBtn">Send me the full report</button>
     </div>
-    <p class="confirm" id="confirmMsg">Thanks — your results have been saved. We'll be in touch.</p>
+    <p class="confirm" id="confirmMsg">Thanks — check your inbox. We've sent your personalized report with recommended next steps for your priority areas.</p>
     <p class="cta-note" id="ctaNote">We'll only use your email to send the roadmap — no spam.</p>
   </div>
 
@@ -416,6 +452,46 @@ const dimensions = [
 
 // Paste the Google Apps Script "Web app URL" here once you've deployed it (Step 2 of the setup guide).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby2JqQJ7qu27woQor6J_tnkJRujcKymVZEdgeq0uk-PZ4ihdZEVp-mfhrf_mYZlw5KdEg/exec";
+
+// The CTA button opens a pre-filled email to this address. Change ADVISORY_EMAIL later if you'd
+// rather point the button at a real booking link (Calendly, contact page, etc.) instead —
+// keep it in sync with the matching constants in google-apps-script.js either way.
+const ADVISORY_EMAIL = "imbibin164@gmail.com";
+const CTA_LABEL = "Book an Advisory Call";
+
+function buildAdvisoryMailto(focusLabel) {
+  const subject = `Advisory call request — ${lastTierName} (${lastPct}%)`;
+  const body = `Hi,\n\nI completed the AI Readiness Calculator and scored ${lastPct}% (${lastTierName}).\nI'd like to book an advisory call to discuss: ${focusLabel}.\n\nThanks!`;
+  return `mailto:${ADVISORY_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+// Draft solution write-ups per dimension — edit freely, this is what shows on-page and in the emailed report.
+const solutionMap = {
+  leadership: {
+    name: "AI Leadership Alignment Sprint",
+    pitch: "A structured 2-week engagement with your leadership team to name an AI owner, agree a mandate, and leave you with a board-ready roadmap — not another slide deck nobody opens."
+  },
+  literacy: {
+    name: "AI Fluency Program",
+    pitch: "Role-specific AI training with a baseline skills assessment and measurable competency targets per team, instead of a generic one-off workshop."
+  },
+  data: {
+    name: "Data & Tooling Readiness Audit",
+    pitch: "We audit your data landscape, identify the one dataset and use case worth starting with, and stand up an approved, governed AI tool around it."
+  },
+  process: {
+    name: "Workflow Redesign Pilot",
+    pitch: "We identify your highest-friction workflow, redesign it end-to-end with AI built in, and turn it into the internal case study that earns budget for the next ten."
+  },
+  change: {
+    name: "Adoption & Change Program",
+    pitch: "A structured change program — communication plan, training cadence, and visible early wins — designed to convert resistance into buy-in."
+  },
+  budget: {
+    name: "AI Investment Roadmap",
+    pitch: "We help you convert ad hoc pilot spend into a named, defensible, multi-year budget line — with the business case leadership needs to approve it."
+  }
+};
 
 const state = {};
 dimensions.forEach(d => state[d.key] = null);
@@ -545,6 +621,7 @@ function renderRecs() {
 
   recsContainer.innerHTML = '';
   weakest.forEach(dim => {
+    const solution = solutionMap[dim.key];
     const div = document.createElement('div');
     div.className = 'rec';
     div.innerHTML = `
@@ -552,6 +629,12 @@ function renderRecs() {
       <div class="rec-body">
         <p><strong>${dim.name}</strong> — scored ${state[dim.key]}/5</p>
         <p class="small">${adviceMap[dim.key]}</p>
+        <div class="rec-solution">
+          <p class="rec-solution-label">Recommended from us</p>
+          <p class="rec-solution-name">${solution.name}</p>
+          <p>${solution.pitch}</p>
+          <a class="rec-cta" href="${buildAdvisoryMailto(dim.name)}">${CTA_LABEL} →</a>
+        </div>
       </div>
     `;
     recsContainer.appendChild(div);
