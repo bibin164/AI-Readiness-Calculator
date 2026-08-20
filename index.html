@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Workforce Readiness Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12203A;
+    --ink-2:#1C314F;
+    --paper:#F7F5F0;
+    --card:#FFFFFF;
+    --brass:#B8912B;
+    --brass-light:#EFE2BE;
+    --slate:#5B6B82;
+    --slate-light:#8894A5;
+    --line:#E4E0D4;
+    --sage:#3F7A5B;
+    --sage-bg:#E8F0EA;
+    --clay:#AA4A34;
+    --clay-bg:#F4E6E1;
+    --amber:#B8792B;
+    --amber-bg:#F6EADA;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:0 24px 80px;}
+
+  header.hero{
+    background:var(--ink);
+    color:#EFE9DA;
+    padding:56px 24px 64px;
+    margin-bottom:-40px;
+  }
+  header.hero .inner{max-width:880px;margin:0 auto;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin:0 0 14px;
+  }
+  h1{
+    font-family:'Source Serif 4',serif;
+    font-weight:600;
+    font-size:38px;
+    line-height:1.15;
+    margin:0 0 16px;
+    max-width:620px;
+    color:#F7F5F0;
+  }
+  .hero p{
+    font-size:16px;
+    line-height:1.6;
+    color:#C3C9D6;
+    max-width:520px;
+    margin:0;
+  }
+
+  .panel{
+    position:relative;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:32px;
+    margin-bottom:24px;
+    box-shadow:0 1px 0 rgba(18,32,58,0.03);
+  }
+
+  .gauge-panel{
+    display:flex;
+    gap:36px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .gauge-svg-wrap{flex:0 0 220px;}
+  .gauge-readout{flex:1;min-width:220px;}
+  .tier-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin:0 0 6px;
+  }
+  .tier-name{
+    font-family:'Source Serif 4',serif;
+    font-size:28px;
+    font-weight:600;
+    margin:0 0 8px;
+  }
+  .tier-desc{
+    font-size:14px;
+    color:var(--slate);
+    line-height:1.55;
+    margin:0;
+    max-width:420px;
+  }
+  .score-number{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:15px;
+    color:var(--ink);
+  }
+
+  .section-title{
+    font-family:'Source Serif 4',serif;
+    font-size:20px;
+    font-weight:600;
+    margin:0 0 4px;
+  }
+  .section-sub{
+    font-size:13px;
+    color:var(--slate);
+    margin:0 0 20px;
+  }
+
+  .dim-block{margin-bottom:28px;}
+  .dim-block:last-child{margin-bottom:0;}
+  .dim-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:12px;
+    gap:12px;
+  }
+  .dim-name{font-size:15px;font-weight:600;color:var(--ink);}
+  .dim-score{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--slate);
+    white-space:nowrap;
+  }
+  .choice{
+    display:block;
+    width:100%;
+    text-align:left;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:12px 14px;
+    margin-bottom:6px;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:13.5px;
+    line-height:1.5;
+    color:var(--ink);
+    cursor:pointer;
+    transition:border-color .12s ease, background .12s ease;
+  }
+  .choice:hover{border-color:var(--slate-light);}
+  .choice.selected{
+    border-color:var(--brass);
+    background:var(--brass-light);
+    font-weight:500;
+  }
+  .choice .n{
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--brass);
+    margin-right:8px;
+    font-weight:600;
+  }
+
+  .bars{margin-top:8px;}
+  .bar-row{
+    display:grid;
+    grid-template-columns:170px 1fr 34px;
+    align-items:center;
+    gap:12px;
+    margin-bottom:12px;
+    font-size:13px;
+  }
+  .bar-row:last-child{margin-bottom:0;}
+  .bar-track{
+    height:8px;
+    background:var(--line);
+    border-radius:4px;
+    overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;
+    background:var(--brass);
+    border-radius:4px;
+    transition:width .3s ease;
+  }
+  .bar-val{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--slate);
+    text-align:right;
+  }
+
+  .rec{
+    display:flex;
+    gap:14px;
+    padding:16px 0;
+    border-top:1px solid var(--line);
+  }
+  .rec:first-child{border-top:none;padding-top:0;}
+  .rec-tag{
+    flex:0 0 auto;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    padding:4px 8px;
+    border-radius:3px;
+    height:fit-content;
+    background:var(--clay-bg);
+    color:var(--clay);
+  }
+  .rec-body p{margin:0;font-size:14px;line-height:1.6;color:var(--ink);}
+  .rec-body p.small{font-size:12.5px;color:var(--slate);margin-top:4px;}
+
+  .cta{
+    background:var(--ink);
+    color:#F7F5F0;
+    text-align:left;
+    padding:36px;
+  }
+  .cta h3{
+    font-family:'Source Serif 4',serif;
+    font-size:22px;
+    margin:0 0 8px;
+    font-weight:600;
+  }
+  .cta p{font-size:14px;color:#C3C9D6;margin:0 0 20px;max-width:480px;line-height:1.6;}
+  .cta-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+  input.email{
+    flex:1;
+    min-width:220px;
+    background:#1C314F;
+    border:1px solid #2E4468;
+    color:#F7F5F0;
+    padding:11px 14px;
+    border-radius:4px;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:14px;
+  }
+  input.email::placeholder{color:#8894A5;}
+  button.primary{
+    background:var(--brass);
+    color:#1C1400;
+    border:none;
+    padding:12px 20px;
+    border-radius:4px;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+  }
+  button.primary:hover{background:#CDA13C;}
+  .cta-note{font-size:12px;color:#8894A5;margin-top:12px;}
+  .confirm{
+    font-size:13px;
+    color:var(--sage);
+    margin-top:12px;
+    display:none;
+  }
+
+  .footer-note{
+    text-align:center;
+    font-size:12px;
+    color:var(--slate-light);
+    margin-top:28px;
+  }
+
+  @media (max-width:560px){
+    h1{font-size:28px;}
+    .gauge-panel{flex-direction:column;align-items:flex-start;}
+    .bar-row{grid-template-columns:110px 1fr 30px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="inner">
+    <p class="eyebrow">AI workforce readiness — diagnostic</p>
+    <h1>How ready is your organization to actually capture value from AI?</h1>
+    <p>Answer six short questions about your organization. Get an instant readiness score, a breakdown by dimension, and where to focus first — before you spend another rupee on training that won't move the needle.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="panel gauge-panel" id="gaugePanel">
+    <div class="gauge-svg-wrap">
+      <svg viewBox="0 0 220 130" width="220" height="130">
+        <path d="M 20 110 A 90 90 0 0 1 200 110" fill="none" stroke="#E4E0D4" stroke-width="14" stroke-linecap="round"/>
+        <path id="gaugeArc" d="M 20 110 A 90 90 0 0 1 200 110" fill="none" stroke="#B8912B" stroke-width="14" stroke-linecap="round" stroke-dasharray="0 400" />
+        <g id="needle" transform="rotate(0 110 110)">
+          <line x1="110" y1="110" x2="110" y2="35" stroke="#12203A" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="110" cy="110" r="7" fill="#12203A"/>
+        </g>
+        <text x="110" y="105" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-weight="600" font-size="26" fill="#12203A" id="scoreText" transform="translate(0,0)"></text>
+      </svg>
+    </div>
+    <div class="gauge-readout">
+      <p class="tier-label">Overall readiness</p>
+      <p class="tier-name" id="tierName">Not yet scored</p>
+      <p class="tier-desc" id="tierDesc">Answer the six questions below — your score updates live as you go.</p>
+    </div>
+  </div>
+
+  <div class="panel" id="questionsPanel">
+    <p class="section-title">The six dimensions</p>
+    <p class="section-sub">For each dimension, pick the statement that best describes your organization today.</p>
+    <div id="dimContainer"></div>
+  </div>
+
+  <div class="panel">
+    <p class="section-title">Score breakdown</p>
+    <p class="section-sub">Where you're strong, and where the gaps are.</p>
+    <div class="bars" id="barsContainer"></div>
+  </div>
+
+  <div class="panel">
+    <p class="section-title">Where to focus first</p>
+    <p class="section-sub">Automatically generated from your two lowest-scoring dimensions.</p>
+    <div id="recsContainer"></div>
+  </div>
+
+  <div class="panel cta">
+    <h3>Want the full report and a roadmap?</h3>
+    <p>This score gives you the headline. A 30-minute working session gives you a prioritized, budgeted roadmap for the next two quarters — specific to your team's readiness score.</p>
+    <div class="cta-row">
+      <input class="email" type="email" id="emailInput" placeholder="you@company.com">
+      <button class="primary" id="ctaBtn">Send me the full report</button>
+    </div>
+    <p class="confirm" id="confirmMsg">Thanks — your results have been saved. We'll be in touch.</p>
+    <p class="cta-note" id="ctaNote">We'll only use your email to send the roadmap — no spam.</p>
+  </div>
+
+  <p class="footer-note">Built as a diagnostic tool — not a substitute for a full organizational assessment.</p>
+</div>
+
+<script>
+const dimensions = [
+  {
+    key: "leadership",
+    name: "Leadership & strategy alignment",
+    options: [
+      "No one owns AI adoption; it isn't on the leadership agenda.",
+      "A few leaders talk about AI, but there's no strategy.",
+      "Leadership agrees AI matters, but there's no roadmap or owner.",
+      "There's a named owner and a rough roadmap, but no board-level mandate.",
+      "AI capability building is a leadership priority with budget and a clear mandate."
+    ]
+  },
+  {
+    key: "literacy",
+    name: "Employee AI literacy & skills",
+    options: [
+      "Most employees have never used an AI tool at work.",
+      "A handful of enthusiasts use AI tools informally.",
+      "Some teams use AI tools, but skill levels vary wildly.",
+      "Most teams have basic AI fluency and a formal program is underway.",
+      "AI fluency is a standard, measured competency across the workforce."
+    ]
+  },
+  {
+    key: "data",
+    name: "Data & tools infrastructure",
+    options: [
+      "We don't know what data we have or where it lives.",
+      "Data exists but is siloed and mostly unusable for AI.",
+      "Some clean data and a few pilot AI tools exist.",
+      "Solid data foundations and approved AI tools exist for key teams.",
+      "Enterprise-wide data and AI tooling infrastructure is mature and governed."
+    ]
+  },
+  {
+    key: "process",
+    name: "Process & workflow integration",
+    options: [
+      "AI isn't built into any workflow — it's a side experiment.",
+      "A few individuals use AI ad hoc within their own work.",
+      "Pilot projects integrate AI into one or two processes.",
+      "AI is embedded into several core workflows with measured impact.",
+      "AI-augmented processes are the default way work gets done."
+    ]
+  },
+  {
+    key: "change",
+    name: "Change management & culture",
+    options: [
+      "Employees are anxious or resistant to AI; there's no communication plan.",
+      "Leadership talks about AI, but there's no real change plan.",
+      "Some communication and training exist, but adoption is patchy.",
+      "A structured change program supports AI adoption with visible buy-in.",
+      "AI adoption is part of the culture, reinforced by incentives and success stories."
+    ]
+  },
+  {
+    key: "budget",
+    name: "Budget & resource commitment",
+    options: [
+      "There is no budget allocated for AI capability building.",
+      "A small, one-off budget exists for pilots.",
+      "A recurring but modest budget is allocated annually.",
+      "A dedicated, growing budget with a named team is in place.",
+      "AI capability building has a multi-year funded roadmap."
+    ]
+  }
+];
+
+// Paste the Google Apps Script "Web app URL" here once you've deployed it (Step 2 of the setup guide).
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby2JqQJ7qu27woQor6J_tnkJRujcKymVZEdgeq0uk-PZ4ihdZEVp-mfhrf_mYZlw5KdEg/exec";
+
+const state = {};
+dimensions.forEach(d => state[d.key] = null);
+let lastPct = null;
+let lastTierName = null;
+
+const dimContainer = document.getElementById('dimContainer');
+dimensions.forEach(dim => {
+  const block = document.createElement('div');
+  block.className = 'dim-block';
+  block.innerHTML = `
+    <div class="dim-head">
+      <span class="dim-name">${dim.name}</span>
+      <span class="dim-score" id="score-${dim.key}">Not answered</span>
+    </div>
+    <div id="choices-${dim.key}"></div>
+  `;
+  dimContainer.appendChild(block);
+
+  const choicesWrap = block.querySelector(`#choices-${dim.key}`);
+  dim.options.forEach((text, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.type = 'button';
+    btn.innerHTML = `<span class="n">${idx + 1}</span>${text}`;
+    btn.addEventListener('click', () => {
+      state[dim.key] = idx + 1;
+      choicesWrap.querySelectorAll('.choice').forEach(c => c.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById(`score-${dim.key}`).textContent = `${idx + 1} / 5`;
+      recalc();
+    });
+    choicesWrap.appendChild(btn);
+  });
+});
+
+const barsContainer = document.getElementById('barsContainer');
+dimensions.forEach(dim => {
+  const row = document.createElement('div');
+  row.className = 'bar-row';
+  row.innerHTML = `
+    <span>${dim.name}</span>
+    <div class="bar-track"><div class="bar-fill" id="bar-${dim.key}" style="width:0%"></div></div>
+    <span class="bar-val" id="barval-${dim.key}">–</span>
+  `;
+  barsContainer.appendChild(row);
+});
+
+const tiers = [
+  { max: 40, name: "Exploratory", desc: "AI adoption is informal or absent. Focus on leadership alignment and a first funded pilot before scaling anything.", color: "#AA4A34" },
+  { max: 60, name: "Emerging", desc: "Pockets of activity exist but aren't coordinated. The priority is a named owner, a roadmap, and closing the biggest infrastructure gap.", color: "#B8792B" },
+  { max: 80, name: "Advancing", desc: "Foundations are in place and some workflows are AI-augmented. Focus shifts to scaling what's working and measuring impact.", color: "#B8912B" },
+  { max: 100, name: "Leading", desc: "AI capability building is embedded, funded, and culturally normal. Focus on sustaining momentum and staying ahead of the curve.", color: "#3F7A5B" }
+];
+
+function getTier(pct) {
+  return tiers.find(t => pct <= t.max) || tiers[tiers.length - 1];
+}
+
+function recalc() {
+  const answered = dimensions.filter(d => state[d.key] !== null);
+  const totalAnswered = answered.length;
+
+  dimensions.forEach(dim => {
+    const val = state[dim.key] || 0;
+    const pct = (val / 5) * 100;
+    document.getElementById(`bar-${dim.key}`).style.width = pct + '%';
+    document.getElementById(`barval-${dim.key}`).textContent = val ? `${val}/5` : '–';
+  });
+
+  const gauge = document.getElementById('gaugeArc');
+  const needle = document.getElementById('needle');
+  const scoreText = document.getElementById('scoreText');
+  const tierName = document.getElementById('tierName');
+  const tierDesc = document.getElementById('tierDesc');
+
+  if (totalAnswered === 0) {
+    gauge.setAttribute('stroke-dasharray', '0 400');
+    needle.setAttribute('transform', 'rotate(-90 110 110)');
+    scoreText.textContent = '';
+    tierName.textContent = 'Not yet scored';
+    tierDesc.textContent = "Answer the six questions below — your score updates live as you go.";
+    return;
+  }
+
+  const sum = dimensions.reduce((acc, d) => acc + (state[d.key] || 0), 0);
+  const maxPossible = dimensions.length * 5;
+  const pct = Math.round((sum / maxPossible) * 100);
+  const arcLength = 283;
+  const filled = Math.round((pct / 100) * arcLength);
+  gauge.setAttribute('stroke-dasharray', `${filled} 400`);
+
+  const angle = -90 + (pct / 100) * 180;
+  needle.setAttribute('transform', `rotate(${angle} 110 110)`);
+
+  scoreText.textContent = pct + '%';
+
+  const tier = getTier(pct);
+  tierName.textContent = tier.name;
+  tierName.style.color = tier.color;
+  tierDesc.textContent = tier.desc + (totalAnswered < dimensions.length ? ` (based on ${totalAnswered} of ${dimensions.length} dimensions so far)` : '');
+
+  lastPct = pct;
+  lastTierName = tier.name;
+
+  renderRecs();
+}
+
+function renderRecs() {
+  const recsContainer = document.getElementById('recsContainer');
+  const answered = dimensions.filter(d => state[d.key] !== null);
+  if (answered.length === 0) {
+    recsContainer.innerHTML = '<p style="font-size:13px;color:var(--slate);">Answer at least one dimension to see focus areas.</p>';
+    return;
+  }
+  const sorted = [...answered].sort((a, b) => state[a.key] - state[b.key]);
+  const weakest = sorted.slice(0, 2);
+
+  const adviceMap = {
+    leadership: "Get one senior leader to formally own AI capability building with a quarterly review cadence — ambiguity here stalls everything downstream.",
+    literacy: "Run a baseline skills assessment, then a structured AI-fluency program for priority teams rather than a one-off workshop.",
+    data: "Start with one clean, well-governed dataset and one approved tool for a single team — infrastructure maturity should follow real use cases, not precede them.",
+    process: "Pick one high-friction workflow and redesign it end-to-end with AI built in, then use it as the internal case study to justify wider rollout.",
+    change: "Pair every tool rollout with a communication plan and visible early wins — resistance usually comes from silence, not the technology itself.",
+    budget: "Convert one-off pilot spend into a named, recurring line item — funding certainty is what lets a program move past year one."
+  };
+
+  recsContainer.innerHTML = '';
+  weakest.forEach(dim => {
+    const div = document.createElement('div');
+    div.className = 'rec';
+    div.innerHTML = `
+      <span class="rec-tag">Priority</span>
+      <div class="rec-body">
+        <p><strong>${dim.name}</strong> — scored ${state[dim.key]}/5</p>
+        <p class="small">${adviceMap[dim.key]}</p>
+      </div>
+    `;
+    recsContainer.appendChild(div);
+  });
+}
+
+function showCtaError(message) {
+  const errorId = 'email-error';
+  let existingError = document.getElementById(errorId);
+  if (existingError) existingError.remove();
+  const err = document.createElement('p');
+  err.id = errorId;
+  err.style.color = '#E29A8A';
+  err.style.fontSize = '12px';
+  err.style.marginTop = '10px';
+  err.textContent = message;
+  document.querySelector('.cta-row').insertAdjacentElement('afterend', err);
+}
+
+document.getElementById('ctaBtn').addEventListener('click', async () => {
+  const email = document.getElementById('emailInput').value.trim();
+  const existingError = document.getElementById('email-error');
+  if (existingError) existingError.remove();
+
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (!isValidEmail) {
+    showCtaError('Enter a valid email address first.');
+    return;
+  }
+
+  const totalAnswered = dimensions.filter(d => state[d.key] !== null).length;
+  if (totalAnswered < dimensions.length) {
+    showCtaError(`Answer all ${dimensions.length} questions above first so your report is based on a complete score.`);
+    return;
+  }
+
+  if (SCRIPT_URL.indexOf('PASTE_YOUR_APPS_SCRIPT_URL_HERE') !== -1) {
+    showCtaError('Backend not connected yet — SCRIPT_URL still needs to be set in index.html.');
+    return;
+  }
+
+  const btn = document.getElementById('ctaBtn');
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  const payload = {
+    email,
+    scorePct: lastPct,
+    tier: lastTierName,
+    leadership: state.leadership,
+    literacy: state.literacy,
+    data: state.data,
+    process: state.process,
+    change: state.change,
+    budget: state.budget
+  };
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids a CORS preflight against Apps Script
+      body: JSON.stringify(payload)
+    });
+    document.getElementById('confirmMsg').style.display = 'block';
+    document.getElementById('emailInput').disabled = true;
+    btn.textContent = 'Sent ✓';
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+    showCtaError("Something went wrong sending your results. Check your connection and try again.");
+  }
+});
+
+recalc();
+</script>
+
+</body>
+</html>
