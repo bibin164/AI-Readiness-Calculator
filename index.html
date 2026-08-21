@@ -283,6 +283,36 @@
     font-size:14px;
   }
   input.email::placeholder{color:#8894A5;}
+  .hp-field{
+    position:absolute;
+    left:-9999px;
+    top:-9999px;
+    width:1px;
+    height:1px;
+    opacity:0;
+    pointer-events:none;
+  }
+  .cta-row-select{margin-bottom:10px;}
+  select.select-size{
+    background:#1C314F;
+    border:1px solid #2E4468;
+    color:#F7F5F0;
+    padding:11px 14px;
+    border-radius:4px;
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:14px;
+    min-width:220px;
+  }
+  select.select-size:invalid{color:#8894A5;}
+  .tier-benchmark{
+    font-size:12.5px;
+    color:var(--slate);
+    margin:8px 0 0;
+    padding-top:8px;
+    border-top:1px solid var(--line);
+    max-width:420px;
+    line-height:1.5;
+  }
   button.primary{
     background:var(--brass);
     color:#1C1400;
@@ -345,6 +375,7 @@
       <p class="tier-label">Overall readiness</p>
       <p class="tier-name" id="tierName">Not yet scored</p>
       <p class="tier-desc" id="tierDesc">Answer the six questions below — your score updates live as you go.</p>
+      <p class="tier-benchmark" id="tierBenchmark" style="display:none;"></p>
     </div>
   </div>
 
@@ -369,6 +400,20 @@
   <div class="panel cta">
     <h3>Want the full report and a roadmap?</h3>
     <p>This score gives you the headline. A 30-minute working session gives you a prioritized, budgeted roadmap for the next two quarters — specific to your team's readiness score.</p>
+
+    <!-- Honeypot: invisible to real users, only bots that auto-fill every field will populate this. -->
+    <input type="text" id="hpField" name="company_website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp-field">
+
+    <div class="cta-row cta-row-select">
+      <select class="select-size" id="companySizeInput">
+        <option value="" disabled selected>Company size</option>
+        <option value="1-10">1–10 employees</option>
+        <option value="11-50">11–50 employees</option>
+        <option value="51-200">51–200 employees</option>
+        <option value="201-1000">201–1,000 employees</option>
+        <option value="1000+">1,000+ employees</option>
+      </select>
+    </div>
     <div class="cta-row">
       <input class="email" type="email" id="emailInput" placeholder="you@company.com">
       <button class="primary" id="ctaBtn">Send me the full report</button>
@@ -551,6 +596,15 @@ function getTier(pct) {
   return tiers.find(t => pct <= t.max) || tiers[tiers.length - 1];
 }
 
+// Qualitative positioning context per tier — not a claimed statistic, just honest framing
+// of how common each stage is. Keep in sync with TIER_BENCHMARKS in google-apps-script.js.
+const tierBenchmarks = {
+  Exploratory: "Most organizations exploring AI for the first time land in this range — you're early in the journey, not behind.",
+  Emerging: "This is the most common stage we see. Pockets of activity exist, but few organizations move past it without a deliberate push.",
+  Advancing: "Fewer organizations reach this stage — you're ahead of most peers who are still building foundations.",
+  Leading: "This tier is rare. Most organizations haven't embedded AI this deeply into how they operate yet."
+};
+
 function recalc() {
   const answered = dimensions.filter(d => state[d.key] !== null);
   const totalAnswered = answered.length;
@@ -567,6 +621,7 @@ function recalc() {
   const scoreText = document.getElementById('scoreText');
   const tierName = document.getElementById('tierName');
   const tierDesc = document.getElementById('tierDesc');
+  const tierBenchmark = document.getElementById('tierBenchmark');
 
   if (totalAnswered === 0) {
     gauge.setAttribute('stroke-dasharray', '0 400');
@@ -574,6 +629,7 @@ function recalc() {
     scoreText.textContent = '';
     tierName.textContent = 'Not yet scored';
     tierDesc.textContent = "Answer the six questions below — your score updates live as you go.";
+    tierBenchmark.style.display = 'none';
     return;
   }
 
@@ -593,6 +649,9 @@ function recalc() {
   tierName.textContent = tier.name;
   tierName.style.color = tier.color;
   tierDesc.textContent = tier.desc + (totalAnswered < dimensions.length ? ` (based on ${totalAnswered} of ${dimensions.length} dimensions so far)` : '');
+
+  tierBenchmark.textContent = tierBenchmarks[tier.name];
+  tierBenchmark.style.display = 'block';
 
   lastPct = pct;
   lastTierName = tier.name;
@@ -656,12 +715,26 @@ function showCtaError(message) {
 
 document.getElementById('ctaBtn').addEventListener('click', async () => {
   const email = document.getElementById('emailInput').value.trim();
+  const companySize = document.getElementById('companySizeInput').value;
+  const honeypot = document.getElementById('hpField').value.trim();
   const existingError = document.getElementById('email-error');
   if (existingError) existingError.remove();
+
+  // Bot trap: real visitors never see or fill this field. If it's filled, pretend to
+  // succeed (so the bot doesn't learn to avoid it) without actually sending anything.
+  if (honeypot) {
+    document.getElementById('confirmMsg').style.display = 'block';
+    return;
+  }
 
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   if (!isValidEmail) {
     showCtaError('Enter a valid email address first.');
+    return;
+  }
+
+  if (!companySize) {
+    showCtaError('Select your company size first.');
     return;
   }
 
@@ -683,6 +756,8 @@ document.getElementById('ctaBtn').addEventListener('click', async () => {
 
   const payload = {
     email,
+    companySize,
+    website: honeypot, // always empty for real users; Apps Script double-checks this too
     scorePct: lastPct,
     tier: lastTierName,
     leadership: state.leadership,
@@ -701,6 +776,7 @@ document.getElementById('ctaBtn').addEventListener('click', async () => {
     });
     document.getElementById('confirmMsg').style.display = 'block';
     document.getElementById('emailInput').disabled = true;
+    document.getElementById('companySizeInput').disabled = true;
     btn.textContent = 'Sent ✓';
   } catch (err) {
     btn.disabled = false;
